@@ -148,6 +148,7 @@ with st.sidebar:
         - 🔍 Pipeline Failure Analyzer
         - 🩺 SQL Query Health Checker
         - ⚡ T-SQL → Spark Translator
+        - 🏗 Architecture Advisor
         """,
     )
     st.divider()
@@ -186,12 +187,12 @@ def call_ai(system: str, user: str) -> str:
 st.markdown("""
 <div class="hero">
     <h1>🔧 Fabric Dev Toolkit</h1>
-    <p>AI-powered tools for MS Fabric & MS SQL developers · Diagnose pipeline failures · Optimize queries · Translate T-SQL to Spark</p>
+    <p>AI-powered tools for MS Fabric & MS SQL developers · Diagnose pipeline failures · Optimize queries · Translate T-SQL to Spark · Design Fabric architectures</p>
 </div>
 """, unsafe_allow_html=True)
 
 # ── Tabs ──────────────────────────────────────────────────────────────────────
-tab1, tab2, tab3 = st.tabs(["🔍 Pipeline Analyzer", "🩺 SQL Health Checker", "⚡ T-SQL → Spark"])
+tab1, tab2, tab3, tab4 = st.tabs(["🔍 Pipeline Analyzer", "🩺 SQL Health Checker", "⚡ T-SQL → Spark", "🏗 Architecture Advisor"])
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -487,6 +488,117 @@ with tab3:
 
                     st.markdown("### 📋 Migration Notes")
                     st.markdown(sections["Migration Notes"].strip())
+
+                except Exception as e:
+                    st.error(f"Error: {e}")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TAB 4 — MS Fabric Architecture Advisor
+# ─────────────────────────────────────────────────────────────────────────────
+ARCH_SYSTEM = """You are a Microsoft Fabric solution architect with deep expertise
+in all Fabric workloads including Data Engineering, Data Warehouse, Real-Time Analytics,
+Data Science, and Power BI. You help data teams choose the right Fabric components
+for their use case. Always be specific, practical, and opinionated — don't just list
+options, recommend the best one for the scenario described.
+
+Respond EXACTLY in this format (use these exact headers):
+
+## Recommended Components
+List each recommended Fabric component with a one-sentence justification.
+Cover: Lakehouse vs Warehouse vs Eventhouse, ingestion method, compute layer,
+reporting layer, and any ML/DS workloads if relevant.
+
+## Architecture Flow
+A simple text-based diagram showing how data flows through the components.
+Use arrows (→) to show the flow. Example format:
+Source → Ingestion Layer → Storage Layer → Compute Layer → Reporting Layer
+
+## Key Decisions & Trade-offs
+Bullet list of WHY each major component was chosen over alternatives, and
+what trade-offs the team should be aware of.
+
+## Getting Started Checklist
+A numbered list of the first 5–7 concrete steps to implement this architecture
+in MS Fabric, ordered by priority."""
+
+ARCH_EXAMPLES = {
+    "Real-time IoT → Power BI (sub-5min refresh)": (
+        "I have 10TB of IoT sensor data coming in real-time from 50,000 devices. "
+        "I need Power BI dashboards refreshed every 5 minutes for operations teams. "
+        "Data must be retained for 2 years for compliance."
+    ),
+    "Migrate SQL Server DW to Fabric": (
+        "We have a legacy SQL Server data warehouse with 200 stored procedures, "
+        "500GB of data, and 30 Power BI reports. We want to migrate everything to "
+        "Microsoft Fabric with minimal disruption to business users."
+    ),
+    "Daily ML training on large dataset": (
+        "I need to process 5TB of daily clickstream data from our website, "
+        "run feature engineering pipelines, train churn prediction ML models daily, "
+        "and expose predictions to our CRM via API."
+    ),
+}
+
+with tab4:
+    st.markdown("#### Describe your data scenario in plain English and get a tailored MS Fabric architecture recommendation.")
+
+    with st.expander("📋 Load example scenario"):
+        for label, scenario in ARCH_EXAMPLES.items():
+            if st.button(label, key=f"arch_ex_{label[:20]}"):
+                st.session_state["arch_text"] = scenario
+
+    arch_input = st.text_area(
+        "Describe your data scenario",
+        height=180,
+        placeholder=(
+            "e.g. I have 10TB of IoT sensor data coming in real-time and need "
+            "Power BI dashboards refreshed every 5 minutes…"
+        ),
+        key="arch_text",
+    )
+
+    if st.button("🏗 Get Architecture Recommendation", type="primary", key="arch_analyze"):
+        if not arch_input.strip():
+            st.warning("Please describe your scenario before getting a recommendation.")
+        else:
+            with st.spinner("Designing your Fabric architecture…"):
+                try:
+                    result = call_ai(ARCH_SYSTEM, arch_input.strip())
+
+                    sections = {
+                        "Recommended Components": "",
+                        "Architecture Flow": "",
+                        "Key Decisions & Trade-offs": "",
+                        "Getting Started Checklist": "",
+                    }
+                    current = None
+                    for line in result.splitlines():
+                        stripped = line.strip()
+                        if stripped.startswith("## Recommended Components"):
+                            current = "Recommended Components"
+                        elif stripped.startswith("## Architecture Flow"):
+                            current = "Architecture Flow"
+                        elif stripped.startswith("## Key Decisions"):
+                            current = "Key Decisions & Trade-offs"
+                        elif stripped.startswith("## Getting Started"):
+                            current = "Getting Started Checklist"
+                        elif current:
+                            sections[current] += line + "\n"
+
+                    st.divider()
+
+                    st.markdown("### 🧩 Recommended Components")
+                    st.markdown(sections["Recommended Components"].strip())
+
+                    st.markdown("### 🔀 Architecture Flow")
+                    st.code(sections["Architecture Flow"].strip(), language=None)
+
+                    st.markdown("### ⚖️ Key Decisions & Trade-offs")
+                    st.markdown(sections["Key Decisions & Trade-offs"].strip())
+
+                    st.markdown("### ✅ Getting Started Checklist")
+                    st.markdown(sections["Getting Started Checklist"].strip())
 
                 except Exception as e:
                     st.error(f"Error: {e}")
