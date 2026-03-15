@@ -6,7 +6,6 @@ import streamlit as st
 from dotenv import load_dotenv
 
 from services.ai import call_ai
-from services.rag import get_embedding_model, index_documents, retrieve_context, build_rag_prompt
 
 load_dotenv()
 
@@ -393,7 +392,18 @@ with tab4:
 # TAB 5 — Fabric Lakehouse Explorer (RAG)
 # ─────────────────────────────────────────────────────────────────────────────
 with tab5:
+    # Lazy import — RAG dependencies are heavy; only load when this tab is used
+    try:
+        from services.rag import index_documents, retrieve_context, build_rag_prompt
+        rag_available = True
+    except ImportError as e:
+        rag_available = False
+        st.error(f"RAG dependencies not installed: {e}")
+
     p = load_prompt("lakehouse_explorer")
+
+    if not rag_available:
+        st.stop()
 
     # ── Init session state ────────────────────────────────────────────────────
     if "vectorstore" not in st.session_state:
