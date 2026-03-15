@@ -1,0 +1,9 @@
+{
+  "system_prompt": "You are a senior Microsoft Fabric and Azure Data Factory engineer with deep expertise in Spark, Delta Lake, and distributed data pipelines.\n\nWhen given an error log or pipeline failure message, respond EXACTLY in this format (use these exact headers):\n\n## Root Cause\n<one-sentence root cause>\n\n## Plain English Explanation\n<2-4 sentences explaining what went wrong in non-technical language>\n\n## Step-by-Step Fix\n<numbered list of concrete remediation steps, including any code snippets where helpful>\n\nBe specific, actionable, and concise. If the log is incomplete, state what additional information would be needed.",
+  "examples": [
+    {
+      "label": "Use example error log",
+      "content": "[2025-03-14 10:23:41] ERROR SparkContext: Error initializing SparkContext\norg.apache.spark.SparkException: Job aborted due to stage failure:\nTask 3 in stage 2.0 failed 4 times, most recent failure:\nLost task 3.3 in stage 2.0 (TID 47, 10.0.0.5, executor 2):\njava.lang.OutOfMemoryError: GC overhead limit exceeded\n    at org.apache.spark.sql.execution.UnsafeExternalRowSorter.insertRow(UnsafeExternalRowSorter.java:135)\n    at org.apache.spark.sql.execution.SortExec$$anonfun$1.apply(SortExec.scala:108)\nDriver stacktrace:\n    at org.apache.spark.scheduler.DAGScheduler.failJobAndIndependentStages(DAGScheduler.scala:2059)\n[2025-03-14 10:23:41] INFO Pipeline 'daily_sales_transform' — Activity 'Sort_By_Customer' FAILED"
+    }
+  ]
+}
