@@ -431,15 +431,30 @@ with tab5:
         key="metadata_file",
     )
 
-    col_index, col_clear = st.columns([2, 1])
+    col_index, col_sample, col_clear = st.columns([2, 2, 1])
     with col_index:
         index_btn = st.button("📥 Index my Lakehouse metadata", type="primary", key="index_btn")
+    with col_sample:
+        sample_btn = st.button("🧪 Load sample data", key="sample_btn")
     with col_clear:
-        if st.button("🗑 Clear index", key="clear_index"):
+        if st.button("🗑 Clear", key="clear_index"):
             st.session_state["vectorstore"] = None
             st.session_state["chat_history"] = []
             st.session_state["indexed"] = False
             st.rerun()
+
+    if sample_btn:
+        sample_path = Path(__file__).parent / "demo_data" / "lakehouse_metadata.csv"
+        content = sample_path.read_text(encoding="utf-8")
+        with st.spinner("Indexing sample Lakehouse metadata…"):
+            try:
+                vectorstore, chunk_count = index_documents(content)
+                st.session_state["vectorstore"] = vectorstore
+                st.session_state["indexed"] = True
+                st.session_state["chat_history"] = []
+                st.success(f"✅ Sample data indexed — {chunk_count} chunks stored. Start asking questions!")
+            except Exception as e:
+                st.error(f"Indexing error: {e}")
 
     if index_btn:
         if uploaded_file is None:
