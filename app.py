@@ -7,7 +7,7 @@ load_dotenv()
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Fabric Dev Toolkit · FABCON",
+    page_title="Fabric Dev Toolkit · FABCON 2026",
     page_icon="🔧",
     layout="wide",
 )
@@ -137,7 +137,7 @@ with st.sidebar:
     st.markdown(
         "<span style='color:#718096;font-size:13px'>"
         "A free AI-powered toolkit for **MS Fabric** and **MS SQL** developers. "
-        "Built for the FABCON community.</span>",
+        "Built for the FABCON 2026 community.</span>",
         unsafe_allow_html=True,
     )
     st.divider()
@@ -156,7 +156,7 @@ with st.sidebar:
         """
         <div class="profile-card">
             <div class="profile-name">Ashlesh Patel</div>
-            <div class="profile-title">MS Fabric & Data Engineering</div>
+            <div class="profile-title">AI Enabler</div>
             <a href="https://www.linkedin.com/in/ashleshpatel/" target="_blank" class="linkedin-btn">
                 🔗 Connect on LinkedIn
             </a>
@@ -165,7 +165,7 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
     st.divider()
-    st.caption("Powered by Google Gemini · FABCON 2025")
+    st.caption("Powered by Google Gemini · FABCON 2026")
 
 
 # ── AI call ───────────────────────────────────────────────────────────────────
