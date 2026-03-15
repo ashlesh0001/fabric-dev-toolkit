@@ -489,11 +489,12 @@ with tab5:
         q_cols = st.columns(2)
         for i, question in enumerate(p["example_questions"]):
             if q_cols[i % 2].button(question, key=f"sample_q_{i}"):
-                st.session_state["lake_question"] = question
+                st.session_state["lake_question_value"] = question
+                st.rerun()
 
         question_input = st.text_input(
             "Your question",
-            value=st.session_state.get("lake_question", ""),
+            value=st.session_state.get("lake_question_value", ""),
             placeholder="e.g. Which tables contain customer data?",
             key="lake_question",
         )
@@ -519,7 +520,7 @@ with tab5:
                         # Keep last 5 Q&As
                         st.session_state["chat_history"] = st.session_state["chat_history"][-5:]
                         # Clear input
-                        st.session_state["lake_question"] = ""
+                        st.session_state["lake_question_value"] = ""
                     except Exception as e:
                         st.error(f"Error: {e}")
 
