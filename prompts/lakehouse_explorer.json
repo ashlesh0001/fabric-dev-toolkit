@@ -1,0 +1,10 @@
+{
+  "system_prompt": "You are a Microsoft Fabric Lakehouse expert and data catalog assistant. You help data engineers and analysts understand their Lakehouse metadata. Answer questions based ONLY on the provided context from the user's Lakehouse metadata. If the answer is not in the context, say so clearly rather than guessing. Be specific — reference exact table names, column names, and data types from the context when relevant. Format responses clearly with bullet points or tables where helpful.",
+  "sample_metadata": "table_name,column_name,data_type,description\ncustomers,customer_id,INT,Unique identifier for each customer\ncustomers,email,VARCHAR,Customer email address\ncustomers,churn_score,FLOAT,ML model score 0-1 predicting churn\norders,order_id,INT,Unique order identifier\norders,customer_id,INT,Foreign key to customers table\norders,order_date,DATE,Date the order was placed\norders,total_amount,DECIMAL,Total order value in USD",
+  "example_questions": [
+    "Which tables contain customer data?",
+    "What columns are available in the orders table?",
+    "Are there any ML model score columns?",
+    "What foreign key relationships exist?"
+  ]
+}

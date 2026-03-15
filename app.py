@@ -6,6 +6,7 @@ import streamlit as st
 from dotenv import load_dotenv
 
 from services.ai import call_ai
+from services.rag import get_embedding_model, index_documents, retrieve_context, build_rag_prompt
 
 load_dotenv()
 
@@ -131,6 +132,7 @@ with st.sidebar:
         - 🩺 SQL Query Health Checker
         - ⚡ T-SQL → Spark Translator
         - 🏗 Architecture Advisor
+        - 🗂 Lakehouse Explorer
         """,
     )
     st.divider()
@@ -153,16 +155,17 @@ with st.sidebar:
 st.markdown("""
 <div class="hero">
     <h1>🔧 Fabric Dev Toolkit</h1>
-    <p>AI-powered tools for MS Fabric & MS SQL developers · Diagnose pipeline failures · Optimize queries · Translate T-SQL to Spark · Design Fabric architectures</p>
+    <p>AI-powered tools for MS Fabric & MS SQL developers · Diagnose pipeline failures · Optimize queries · Translate T-SQL to Spark · Design Fabric architectures · Explore Lakehouse metadata</p>
 </div>
 """, unsafe_allow_html=True)
 
 # ── Tabs ──────────────────────────────────────────────────────────────────────
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "🔍 Pipeline Analyzer",
     "🩺 SQL Health Checker",
     "⚡ T-SQL → Spark",
     "🏗 Architecture Advisor",
+    "🗂 Lakehouse Explorer",
 ])
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -385,3 +388,125 @@ with tab4:
                     st.markdown(sections["Getting Started Checklist"].strip())
                 except Exception as e:
                     st.error(f"Error: {e}")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TAB 5 — Fabric Lakehouse Explorer (RAG)
+# ─────────────────────────────────────────────────────────────────────────────
+with tab5:
+    p = load_prompt("lakehouse_explorer")
+
+    # ── Init session state ────────────────────────────────────────────────────
+    if "vectorstore" not in st.session_state:
+        st.session_state["vectorstore"] = None
+    if "chat_history" not in st.session_state:
+        st.session_state["chat_history"] = []
+    if "indexed" not in st.session_state:
+        st.session_state["indexed"] = False
+
+    st.markdown("#### Upload your Lakehouse metadata and chat with it using natural language.")
+    st.info(
+        "💡 On first use, the embedding model (~90 MB) downloads automatically. "
+        "This takes ~30 seconds on Streamlit Cloud — subsequent loads are instant."
+    )
+
+    # ── Section 1: Upload & Index ─────────────────────────────────────────────
+    st.markdown("### 📤 Upload & Index Metadata")
+
+    with st.expander("📄 Expected file format (click to see example)"):
+        st.code(p["sample_metadata"], language="csv")
+
+    uploaded_file = st.file_uploader(
+        "Upload your Lakehouse metadata (.txt or .csv)",
+        type=["txt", "csv"],
+        key="metadata_file",
+    )
+
+    col_index, col_clear = st.columns([2, 1])
+    with col_index:
+        index_btn = st.button("📥 Index my Lakehouse metadata", type="primary", key="index_btn")
+    with col_clear:
+        if st.button("🗑 Clear index", key="clear_index"):
+            st.session_state["vectorstore"] = None
+            st.session_state["chat_history"] = []
+            st.session_state["indexed"] = False
+            st.rerun()
+
+    if index_btn:
+        if uploaded_file is None:
+            st.warning("Please upload a metadata file first.")
+        else:
+            content = uploaded_file.read().decode("utf-8")
+            with st.spinner("Indexing your metadata…"):
+                try:
+                    vectorstore, chunk_count = index_documents(content)
+                    st.session_state["vectorstore"] = vectorstore
+                    st.session_state["indexed"] = True
+                    st.session_state["chat_history"] = []
+                    st.success(f"✅ Indexed successfully — {chunk_count} chunks stored.")
+                except Exception as e:
+                    st.error(f"Indexing error: {e}")
+
+    # ── Section 2: Chat ───────────────────────────────────────────────────────
+    st.divider()
+    st.markdown("### 💬 Ask Questions")
+
+    if not st.session_state["indexed"]:
+        st.markdown(
+            "<div style='background:#1a1d27;border:1px solid #2d3148;border-radius:10px;"
+            "padding:24px;text-align:center;color:#718096'>"
+            "📂 Upload and index your Lakehouse metadata above to start chatting."
+            "</div>",
+            unsafe_allow_html=True,
+        )
+    else:
+        # Sample question buttons
+        st.markdown("**Try an example question:**")
+        q_cols = st.columns(2)
+        for i, question in enumerate(p["example_questions"]):
+            if q_cols[i % 2].button(question, key=f"sample_q_{i}"):
+                st.session_state["lake_question"] = question
+
+        question_input = st.text_input(
+            "Your question",
+            value=st.session_state.get("lake_question", ""),
+            placeholder="e.g. Which tables contain customer data?",
+            key="lake_question",
+        )
+
+        if st.button("🔎 Ask", type="primary", key="lake_ask"):
+            if not question_input.strip():
+                st.warning("Please enter a question.")
+            else:
+                with st.spinner("Searching metadata and generating answer…"):
+                    try:
+                        context_chunks = retrieve_context(
+                            question_input.strip(),
+                            st.session_state["vectorstore"],
+                        )
+                        rag_user_prompt = build_rag_prompt(question_input.strip(), context_chunks)
+                        answer = call_ai(p["system_prompt"], rag_user_prompt)
+
+                        st.session_state["chat_history"].append({
+                            "question": question_input.strip(),
+                            "answer": answer,
+                            "context": context_chunks,
+                        })
+                        # Keep last 5 Q&As
+                        st.session_state["chat_history"] = st.session_state["chat_history"][-5:]
+                        # Clear input
+                        st.session_state["lake_question"] = ""
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+
+        # ── Chat history ──────────────────────────────────────────────────────
+        if st.session_state["chat_history"]:
+            st.divider()
+            st.markdown("### 🗨 Chat History")
+            for entry in reversed(st.session_state["chat_history"]):
+                st.markdown(f"**Q: {entry['question']}**")
+                st.markdown(entry["answer"])
+                with st.expander("🔍 View source context retrieved"):
+                    for i, chunk in enumerate(entry["context"], 1):
+                        st.markdown(f"**Chunk {i}:**")
+                        st.code(chunk, language=None)
+                st.divider()
